@@ -2,7 +2,7 @@
 
 A React weather app that lets you search any town, save favourites, track your most-visited cities, and browse a 30-day search history — all persisted locally, no backend required.
 
-**[Live demo →](#)** _(add your deployed link here once it's live)_
+**Live demo →** [multi-city-weather-dashboard.vercel.app](https://multi-city-weather-dashboard.vercel.app/)
 
 ## Features
 
