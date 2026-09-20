@@ -3,6 +3,7 @@ import Navbar from "../components/Navbar";
 import { useWeather } from "../context/WeatherContext";
 import { useEffect, useState } from "react";
 
+//weather states coded
 const weatherCodeMap = {
     0: { text: "Clear Sky", icon: "sun" },
     1: { text: "Mainly Clear", icon: "sun" },
@@ -26,10 +27,12 @@ const weatherCodeMap = {
     96: { text: "Thunderstorm + Hail", icon: "cloud-lightning" },
 };
 
+//decoding function
 function decodeWeatherCode(code) {
     return weatherCodeMap[code] || { text: "Unknown", icon: "cloud" };
 }
 
+//weather showing icon
 function WeatherIcon({ code, size = 24, className }) {
     const { icon } = decodeWeatherCode(code);
 
@@ -40,6 +43,7 @@ function WeatherIcon({ code, size = 24, className }) {
                 <path d="M7 18a4.6 4.4 0 0 1 0 -9a5 4.5 0 0 1 11 2h1a3.5 3.5 0 0 1 0 7" />
                 <path d="M11 13v2m0 3v2m4 -5v2m0 3v2" />
             </>
+            //supposed to add other icons in future
         ),
     };
 
@@ -66,6 +70,7 @@ function City() {
     const { cities, dispatch } = useWeather();
     const [view, setView] = useState("hourly");
 
+    // returning whole city object that matching id of the town
     const city = cities.find(c => c.id === cityId);
 
     //loging a visit every time someone lands on a city's page
@@ -76,6 +81,8 @@ function City() {
     }, [cityId]);
 
     const navigate = useNavigate();
+
+    //if user navigate to /city/cityId directly
     if (!city)
         return (
             <div className="min-h-screen flex flex-col gap-5 justify-center items-center">
@@ -89,8 +96,10 @@ function City() {
             </div>
         );
 
+    //data needed from city
     const { current, daily, hourly, cityName, country, isFav } = city;
 
+    //dispatching toggle favorite
     function handleToggleFavorite() {
         dispatch({ type: "favorite/toggled", payload: city.id });
     }
@@ -103,17 +112,18 @@ function City() {
                     <div className="flex gap-8">
                         <WeatherIcon code={current.weatherCode} size={128} className="text-slate-600" />
 
-                        <div className="flex flex-col gap-3 items-center mt-2">
+                        <div className="flex flex-col gap-3 items-start mt-2">
                             <div>
                                 <h2 className="text-2xl font-semibold">{country}</h2>
                                 <h3 className="text-lg text-gray-500">{cityName}</h3>
                             </div>
 
-                            <div className="flex gap-4">
+                            <div className="flex gap-2">
                                 <button
                                     onClick={handleToggleFavorite}
                                     className="p-2 bg-sky-700 rounded-full border-2 border-white"
                                 >
+                                    {/* conditionally rendering icon shape in city based on isFav state */}
                                     {isFav ? (
                                         <svg
                                             xmlns="http://www.w3.org/2000/svg"
@@ -158,10 +168,14 @@ function City() {
                     </div>
                 </div>
 
-                <div className="flex gap-4 w-[70%] overflow-x-scroll pb-4 px-4 ">
+                <div className="flex items-center gap-4 w-[70%] h-[50vh] overflow-x-auto pb-4 px-4 max-md:flex-col max-md:overflow-y-auto">
+                    {/* rendering showen data based on hourly or daily */}
                     {view === "hourly"
                         ? hourly.map((h, i) => (
-                              <div key={i} className="flex items-center gap-2  p-3 rounded-xl bg-gray-200">
+                              <div
+                                  key={i}
+                                  className="flex items-center gap-2  p-3 rounded-xl bg-gray-200 max-md:w-[50%] max-md:justify-center"
+                              >
                                   <div className="m-0">
                                       <WeatherIcon code={h.weatherCode} size={64} className="text-slate-600" />
                                   </div>
@@ -174,9 +188,9 @@ function City() {
                         : daily.map(d => (
                               <div
                                   key={d.date}
-                                  className="flex flex-col items-center w-[50%] gap-1 p-3 rounded-xl bg-gray-200"
+                                  className="flex flex-col items-center w-[50%] gap-1 p-3 rounded-xl bg-gray-200 max-md:w-[50%]"
                               >
-                                  <div className="flex gap-3">
+                                  <div className="flex gap-4">
                                       <WeatherIcon code={d.weatherCode} size={64} className="text-slate-600" />
                                       <div className="flex flex-col gap-1">
                                           <span className="text-md font-medium">{d.tempMax}°</span>

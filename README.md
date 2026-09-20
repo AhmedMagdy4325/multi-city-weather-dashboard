@@ -1,16 +1,42 @@
-# React + Vite
+# Multi-City Weather Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A React weather app that lets you search any town, save favourites, track your most-visited cities, and browse a 30-day search history — all persisted locally, no backend required.
 
-Currently, two official plugins are available:
+**[Live demo →](#)** _(add your deployed link here once it's live)_
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
 
-## React Compiler
+- Search any city worldwide and get current conditions plus an hourly (next 24h) or 7-day forecast
+- Favourite cities for quick access from the home screen
+- Automatic "Most Visited" ranking based on how often you check a city
+- 30-day search history with relative timestamps ("2h ago", "3d ago")
+- Everything persists across reloads via `localStorage`
+- Responsive layout, built mobile-first with Tailwind CSS
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Tech stack
 
-## Expanding the ESLint configuration
+- **React** (Vite) — component structure, hooks
+- **React Router** — client-side routing (`/`, `/city/:cityId`, `/history`)
+- **Context API + `useReducer`** — centralized app state, no external state library
+- **Tailwind CSS** — styling
+- **[Open-Meteo](https://open-meteo.com/)** — free weather + geocoding API, no key required
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Architecture notes
+
+State lives in one `WeatherContext`, backed by a single reducer with actions for fetch lifecycle (`fetch/start`, `fetch/success`, `fetch/error`), city updates (`favorite/toggled`, `city/visited`), and persistence (`cities/loaded`, `visits/loaded`). Cities are stored once, deduplicated by an ID derived from rounded coordinates — favourites, most-visited, and history are all just different filters/sorts over that same array, plus a separate append-only `visits` log for the history timeline.
+
+## Running locally
+
+```bash
+git clone <this-repo-url>
+cd <repo-folder>
+npm install
+npm run dev
+```
+
+## What I'd add next
+
+- Migrate state management to Redux (in progress on the next project)
+- Unit tests (Jest) and a couple of end-to-end flows (Cypress)
+- Unit toggle (°C/°F)
+- Better handling for ambiguous city name matches (currently takes the first geocoding result)

@@ -1,5 +1,6 @@
 import { createContext, useReducer, useContext, useEffect, useState } from "react";
 
+//creating weather context
 const WeatherContext = createContext();
 
 const weatherCodeMap = {
@@ -25,6 +26,7 @@ const weatherCodeMap = {
     96: { text: "Thunderstorm with Hail", icon: "⛈️" },
 };
 
+//initial state have array of cities and array of visits to allow duplicatio in visits, status for fetching, and error to show the error
 const initialState = {
     cities: [],
     visits: [],
@@ -34,13 +36,19 @@ const initialState = {
 
 function reducer(state, action) {
     switch (action.type) {
+        //start fetching data giving loading state and error null
         case "fetch/start":
             return { ...state, status: "loading", error: null };
 
+        //in case fetch success updating cities and set the status on success
         case "fetch/success": {
+            //passing city data
             const newCity = action.payload;
+
+            //find the position of this city if it's already tracked, else -1
             const existingIndex = state.cities.findIndex(c => c.id === newCity.id);
 
+            //if city update refresh it otherwise add it
             const updatedCities =
                 existingIndex === -1
                     ? [...state.cities, newCity]
@@ -49,15 +57,18 @@ function reducer(state, action) {
             return { ...state, cities: updatedCities, status: "success" };
         }
 
+        //update the error
         case "fetch/error":
             return { ...state, status: "error", error: action.payload };
 
+        //new obj with editing isFav to add/remove from favorites
         case "favorite/toggled":
             return {
                 ...state,
                 cities: state.cities.map(c => (c.id === action.payload ? { ...c, isFav: !c.isFav } : c)),
             };
 
+        //if city visited add visitCount +1 and update last visit
         case "city/visited":
             return {
                 ...state,
@@ -67,9 +78,11 @@ function reducer(state, action) {
                 visits: [...state.visits, { cityId: action.payload, timestamp: Date.now() }],
             };
 
+        //if cities data loaded from localStorage parse it
         case "cities/loaded":
             return { ...state, cities: action.payload };
 
+        //if visited cities loaded parse it
         case "visits/loaded":
             return { ...state, visits: action.payload };
 
@@ -82,6 +95,7 @@ function WeatherProvider({ children }) {
     const [{ cities, visits, error, status }, dispatch] = useReducer(reducer, initialState);
     const [hasLoaded, setHasLoaded] = useState(false);
 
+    //fetching data from storage
     useEffect(() => {
         const storedCities = localStorage.getItem("weatherApp-cities");
         const storedVisits = localStorage.getItem("weatherApp-visits");
@@ -90,21 +104,27 @@ function WeatherProvider({ children }) {
         setHasLoaded(true);
     }, []);
 
+    //store the cities array to localStorage
     useEffect(() => {
         if (hasLoaded) localStorage.setItem("weatherApp-cities", JSON.stringify(cities));
     }, [cities, hasLoaded]);
 
+    //store the visited cities array to localStorage
     useEffect(() => {
         if (hasLoaded) localStorage.setItem("weatherApp-visits", JSON.stringify(visits));
     }, [visits, hasLoaded]);
 
+    //store visits array to localStorage
     useEffect(() => {
         localStorage.setItem("weatherApp-visits", JSON.stringify(visits));
     }, [visits]);
 
+    //open meteo baseurl
     const BASE_URL = "https://api.open-meteo.com/v1/forecast";
 
+    //get the conordinates
     async function getCoordinates(townName) {
+        //search coordinates based on name
         const geoURL = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(townName)}&count=1&language=en&format=json`;
 
         try {
@@ -117,6 +137,7 @@ function WeatherProvider({ children }) {
                 return null;
             }
 
+            //return the data lat and lng to search weather and city name and country to show
             return {
                 lat: data.results[0].latitude,
                 lng: data.results[0].longitude,
@@ -130,6 +151,7 @@ function WeatherProvider({ children }) {
         }
     }
 
+    //searching weather with lng and lat
     async function getTownWeather(lat, lng, units = "celsius") {
         const params = new URLSearchParams({
             latitude: lat,
@@ -143,8 +165,10 @@ function WeatherProvider({ children }) {
             timezone: "auto",
         });
 
+        //search the params instead of adding manually
         const fullURL = `${BASE_URL}?${params}`;
 
+        //fetch the weather
         try {
             const res = await fetch(fullURL);
             if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
@@ -157,6 +181,7 @@ function WeatherProvider({ children }) {
     }
 
     function transformWeatherData(rawData, geoData) {
+        //transform weather to daily
         const daily = rawData.daily.time.map((date, i) => ({
             date,
             tempMax: rawData.daily.temperature_2m_max[i],
@@ -164,9 +189,12 @@ function WeatherProvider({ children }) {
             weatherCode: rawData.daily.weather_code[i],
         }));
 
+        //current time
         const nowIndex = rawData.hourly.time.findIndex(t => new Date(t) >= new Date());
+        //next 24 hours
         const next24 = rawData.hourly.time.slice(nowIndex, nowIndex + 24);
 
+        //data of next 24 hours
         const hourly = next24.map((time, i) => ({
             time,
             temp: rawData.hourly.temperature_2m[nowIndex + i],
@@ -174,6 +202,7 @@ function WeatherProvider({ children }) {
             weatherCode: rawData.hourly.weather_code[nowIndex + i],
         }));
 
+        //return the city obj after editing weather after edit
         return {
             id: `${geoData.lat.toFixed(2)}-${geoData.lng.toFixed(2)}`,
             cityName: geoData.cityName,
@@ -192,15 +221,19 @@ function WeatherProvider({ children }) {
         };
     }
 
+    //searching city
     async function searchCity(townName) {
         dispatch({ type: "fetch/start" });
 
+        //searching by city name
         const geoData = await getCoordinates(townName);
         if (!geoData) return null;
 
+        //searcing by coordinates to have its weather data
         const rawWeather = await getTownWeather(geoData.lat, geoData.lng);
         if (!rawWeather) return null;
 
+        //passing city data
         const cityData = transformWeatherData(rawWeather, geoData);
         dispatch({ type: "fetch/success", payload: cityData });
 
@@ -211,6 +244,7 @@ function WeatherProvider({ children }) {
         return weatherCodeMap[code] || { text: "Unknown", icon: "❓" };
     }
 
+    //returnong provider
     return (
         <WeatherContext.Provider value={{ cities, visits, status, error, searchCity, dispatch, decodeWeatherCode }}>
             {children}
@@ -218,6 +252,7 @@ function WeatherProvider({ children }) {
     );
 }
 
+//using WeatherContext and return "useWeather hook"
 function useWeather() {
     const context = useContext(WeatherContext);
     if (context === undefined) throw new Error("You are using useWeather outside its provider");

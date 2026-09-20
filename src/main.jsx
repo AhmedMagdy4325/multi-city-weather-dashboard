@@ -6,6 +6,7 @@ import { WeatherProvider } from "./context/WeatherContext";
 
 createRoot(document.getElementById("root")).render(
     <StrictMode>
+        {/* providing weather data to the whole app */}
         <WeatherProvider>
             <App />
         </WeatherProvider>
